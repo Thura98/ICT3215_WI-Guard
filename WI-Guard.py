@@ -4,9 +4,35 @@ from scapy.all import *
 # it does NOT load the complete file in memory
 DeAuth_PassCrack_packets = rdpcap("Packet_Files/DeAuth_PassCrack.cap")
 
-print(DeAuth_PassCrack_packets[0].show())
+# Initialize a counter for deauthentication packets
+deauth_count = 0
 
+bssid = ""
+attacker_mac = ""
 
+print(DeAuth_PassCrack_packets[67])
+print(DeAuth_PassCrack_packets[67].show())
+
+# print(DeAuth_PassCrack_packets[67])
+# print(DeAuth_PassCrack_packets[67].addr1)
+# print(DeAuth_PassCrack_packets[67].show())
+
+# Loop through all packets and look for deauth packets
+for pkt in DeAuth_PassCrack_packets:
+    if pkt.haslayer("Dot11Deauth"):
+        deauth_count += 1
+        bssid = pkt.addr3
+        if(pkt.addr1 != pkt.addr3):
+            attacker_mac = pkt.addr1
+        elif(pkt.addr2 != pkt.addr3):
+            attacker_mac = pkt.addr2
+
+if deauth_count > 5:
+    print("Deauthentication attack detected")
+    print("Attacker mac address: " + str(attacker_mac))
+    print("Victim BSSID mac address: " + str(bssid))
+else:
+    print("Deauthentication attack NOT detected")
 
 # References
 # https://charlesreid1.com/wiki/Scapy/Pcap_Reader 
