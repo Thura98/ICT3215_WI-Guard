@@ -35,14 +35,14 @@ for pkt in DeAuth_PassCrack_packets:
         else:
             if cont_deauth_count > 5:
                 print("================================================================================================================")
-                print("Deauthentication attack attempt " + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
+                print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
                 print("Attacker mac address: " + attacker_mac)
                 print("Victim BSSID mac address: " + bssid + "\n")
                 deauth_attempt += 1
             
             if pkt.haslayer("EAPOL"):
                 if cont_deauth_count > 5 and cont_deauth_count != prev_deauth_count:
-                    print("Possible password cracking attempt " + str(password_crack_attempt) + " detected")
+                    print("Possible password cracking attempt #" + str(password_crack_attempt) + " detected")
                     print(str(cont_deauth_count) + " continuous deauth packets detected before client attempted to connect to the wireless point access point")
                     print("================================================================================================================")
                     prev_deauth_count = cont_deauth_count
@@ -53,7 +53,7 @@ for pkt in DeAuth_PassCrack_packets:
 
 if cont_deauth_count > 5:
     print("================================================================================================================")
-    print("Deauthentication attack attempt " + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
+    print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
     print("Attacker mac address: " + attacker_mac)
     print("Victim BSSID mac address: " + bssid)
 
