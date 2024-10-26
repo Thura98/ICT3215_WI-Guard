@@ -1,53 +1,127 @@
 from scapy.all import *
 
-packets = rdpcap("Packet_Files/DeAuth_PassCrack.cap")
+#================================= Rogue AP DETECTION =================================
+def Rogue_AP_Detection(packets):
+    # Dictionary to track SSID and BSSID associations
+    ap_info = {}
+    # Dictionary to count deauthentication frames from each BSSID
+    deauth_count = {}
+    # Set to track SSIDs already flagged as potential rogue APs
+    flagged_ssids = set()
+    for pkt in packets:
+        # Check if the packet is a Dot11 (Wi-Fi) packet
+        if pkt.haslayer(Dot11):
+            # Check if the packet is a beacon or probe response frame (type 0, subtype 8 or 5)
+            if pkt.type == 0 and pkt.subtype in (8, 5):
+                # Extract SSID and BSSID
+                ssid = pkt.info.decode('utf-8', 'ignore')
+                bssid = pkt.addr2
 
-# A counter for deauthentication packets
-cont_deauth_count = 0
-prev_deauth_count = 0
-password_crack_attempt = 1
-deauth_attempt = 1
+                # Check for duplicate SSIDs with different BSSIDs (potential rogue AP)
+                if ssid in ap_info:
+                    if ap_info[ssid] != bssid and ssid not in flagged_ssids:
+                        print(f"Potential Rogue AP Detected: SSID {ssid} has multiple BSSIDs: {ap_info[ssid]} and {bssid}")
+                        flagged_ssids.add(ssid)  # Mark this SSID as flagged to avoid repeated messages
+                else:
+                    # Save the SSID and BSSID if not already in ap_info
+                    ap_info[ssid] = bssid
 
-# attacker and victim mac address variables
-bssid = ""
-attacker_mac = ""
+            # Check if the packet is a deauthentication frame (type 0, subtype 12)
+            if pkt.type == 0 and pkt.subtype == 12:
+                bssid = pkt.addr2
+                if bssid:
+                    # Increment the count of deauth frames for the BSSID
+                    if bssid in deauth_count:
+                        deauth_count[bssid] += 1
+                    else:
+                        deauth_count[bssid] = 1
 
-# Loop through all packets and look for deauth and EAPOL packets
-for pkt in packets:        
-    # Check if packet is an EAPOL packet or a deauth packet
-    if (pkt.haslayer("EAPOL") or pkt.haslayer("Dot11Deauth")):
-        # Check if packet is a deauth packet
-        if pkt.haslayer("Dot11Deauth"):
-            cont_deauth_count += 1
-            bssid = pkt.addr3
-            if(pkt.addr1 != pkt.addr3):
-                attacker_mac = pkt.addr1
-            elif(pkt.addr2 != pkt.addr3):
-                attacker_mac = pkt.addr2
-        else:
-            if cont_deauth_count > 5:
-                print("================================================================================================================")
-                print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
-                print("Attacker mac address: " + attacker_mac)
-                print("Victim BSSID mac address: " + bssid + "\n")
-                deauth_attempt += 1
+                    # Check if 10 or more deauth frames are sent
+                    if deauth_count.get(ap_info.get(ssid, ''), 0) >= 10:
+                        print(f"Rogue AP Confirmed: BSSID {bssid} is the rogue AP due to excessive deauthentication frames.")
+                        break  # Stop the loop once a rogue AP is confirmed
+                    elif deauth_count.get(bssid, 0) >= 10:
+                        print(f"Rogue AP Confirmed: BSSID {ap_info.get(ssid, '')} is the rogue AP due to excessive deauthentication frames.")
+                        break  # Stop the loop once a rogue AP is confirmed
+    print("Analysis complete.")
+#================================= Rogue AP DETECTION =================================
+
+#================================= DEAUTHENTICATION ATTACK AND PASSWORD CRACKING DETECTION =================================
+def deauth_password_crack_detect(packets):
+    # A counter for deauthentication packets
+    cont_deauth_count = 0
+    cont_eapol_count = 0
+    prev_deauth_count = 0
+    password_crack_attempt = 1
+    deauth_attempt = 1
+
+    # attacker and victim mac address variables
+    bssid = ""
+    attacker_mac = ""
+
+    # Loop through all packets and look for deauth and EAPOL packets
+    for pkt in packets:
+        # Check if the packet is a Dot11 (Wi-Fi) packet
+        if pkt.haslayer(Dot11):
+            # Check if packet is an EAPOL packet or a deauth packet
+            if (pkt.haslayer("EAPOL") or pkt.haslayer("Dot11Deauth")):
+                # Check if packet is a deauth packet
+                if pkt.haslayer("Dot11Deauth"):
+                    cont_deauth_count += 1
+                    bssid = pkt.addr3
+                    if(pkt.addr1 != pkt.addr3):
+                        attacker_mac = pkt.addr1
+                    elif(pkt.addr2 != pkt.addr3):
+                        attacker_mac = pkt.addr2
+                else:
+                    if cont_deauth_count > 5:
+                        print("================================================================================================================")
+                        print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
+                        print("Attacker mac address: " + attacker_mac)
+                        print("Victim BSSID mac address: " + bssid + "\n")
+                        deauth_attempt += 1
             
-            if pkt.haslayer("EAPOL"):
-                if cont_deauth_count > 5 and cont_deauth_count != prev_deauth_count:
-                    print("Possible password cracking attempt #" + str(password_crack_attempt) + " detected")
-                    print(str(cont_deauth_count) + " continuous deauth packets detected before client attempted to connect to the wireless point access point")
-                    print("================================================================================================================")
-                    prev_deauth_count = cont_deauth_count
-                    password_crack_attempt += 1
+                    if pkt.haslayer("EAPOL"):
+                        cont_eapol_count += 1
+                        if cont_deauth_count != 0:
+                            prev_deauth_count = cont_deauth_count
+                        if cont_eapol_count == 4:
+                            print("Possible password cracking attempt #" + str(password_crack_attempt) + " detected")
+                            print(str(prev_deauth_count) + " continuous deauth packets detected before client attempted to connect to the wireless point access point")
+                            print("================================================================================================================")
+                            password_crack_attempt += 1
+                    cont_deauth_count = 0
+            else:
+                cont_eapol_count = 0
+    
+    if cont_deauth_count > 5:
+        print("================================================================================================================")
+        print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
+        print("Attacker mac address: " + attacker_mac)
+        print("Victim BSSID mac address: " + bssid)
+#================================= DEAUTHENTICATION ATTACK AND PASSWORD CRACKING DETECTION =================================
 
-            cont_deauth_count = 0
+def main():
+    # print("[Select an option:]")
+    # print("==========================")
+    # print("Deauth attack & password cracking detection - 1")
+    # print("Rogue AP detection - 2")
+    # print("Database Enumeration - 3")
+    # print("Database FingerPrinting - 4")
+    # print("Vulnerability Scanning - 5")
 
+    # Wait for user input and store it in a variable
+    # selected_option = input("Input option here: ")
+    packets = rdpcap("Packet_Files/wep-01-dec.cap")
+    selected_option = 1
+    if(int(selected_option) == 1):
+        deauth_password_crack_detect(packets)
+    elif(int(selected_option) == 2):
+        Rogue_AP_Detection(packets)
 
-if cont_deauth_count > 5:
-    print("================================================================================================================")
-    print("Deauthentication attack attempt #" + str(deauth_attempt) + " detected, " + str(cont_deauth_count) + " continuous deauth packets are found")
-    print("Attacker mac address: " + attacker_mac)
-    print("Victim BSSID mac address: " + bssid)
+if __name__ == "__main__":
+    main()
+
 
 # References
 # https://charlesreid1.com/wiki/Scapy/Pcap_Reader 
