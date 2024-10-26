@@ -1,6 +1,6 @@
 from scapy.all import *
 
-DeAuth_PassCrack_packets = rdpcap("Packet_Files/DeAuth_PassCrack.cap")
+packets = rdpcap("Packet_Files/DeAuth_PassCrack.cap")
 
 # A counter for deauthentication packets
 cont_deauth_count = 0
@@ -12,16 +12,8 @@ deauth_attempt = 1
 bssid = ""
 attacker_mac = ""
 
-
-# print(DeAuth_PassCrack_packets[951])
-# print(DeAuth_PassCrack_packets[952].show())
-
-# print(DeAuth_PassCrack_packets[67])
-# print(DeAuth_PassCrack_packets[67].addr1)
-# print(DeAuth_PassCrack_packets[67].show())
-
 # Loop through all packets and look for deauth and EAPOL packets
-for pkt in DeAuth_PassCrack_packets:        
+for pkt in packets:        
     # Check if packet is an EAPOL packet or a deauth packet
     if (pkt.haslayer("EAPOL") or pkt.haslayer("Dot11Deauth")):
         # Check if packet is a deauth packet
