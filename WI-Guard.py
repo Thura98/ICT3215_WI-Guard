@@ -1,4 +1,55 @@
 from scapy.all import *
+from collections import defaultdict
+
+
+#================================= ARP replay attack DETECTION =================================
+
+mac_timestamps = defaultdict(list)  # Dictionary to store timestamps for each source MAC address
+threshold = 1000  # Threshold for number of packets
+time_window = 3  # Time window in seconds
+period = None
+
+# Function to check if there are 1000 packets within a 3-second window
+def check_replay_attack(timestamps):
+    global period
+    for i in range(len(timestamps)):
+        # Compare the "i" packet timestamp with the timestamp 1000 packets after
+        if i + threshold <= len(timestamps):
+            time_diff = timestamps[i + threshold - 1] - timestamps[i]
+            if time_diff <= time_window:
+                period = time_diff
+                return True
+    return False
+
+def ARP_Replay_Detection(packets):
+    # Use as reference packet (first packet)
+    first_packet_time = packets[0].time
+
+    # Loop through PCAP to find ARP packets
+    for pkt in packets:
+        if ARP in pkt:
+            # Convert the timestamp to seconds since the first packet captured
+            relative_time = pkt.time - first_packet_time
+            # Add the time to the relative mac address
+            mac_timestamps[pkt.src].append(relative_time)
+
+    # Check for replay attacks for each MAC address
+    spoofed_macs = []
+    for mac, timestamps in mac_timestamps.items():
+        # Sort the timestamps for each MAC address
+        timestamps.sort()
+        if len(timestamps) >= threshold and check_replay_attack(timestamps):
+            spoofed_macs.append(mac)
+
+    # Output the detected spoofed MAC addresses
+    if spoofed_macs:
+        print(f"Detected ARP replay attack! Spoofed source MAC addresses has 1000 packets within {period} seconds")
+        for mac in spoofed_macs:
+            print("Spoofed MAC:", mac)
+    else:
+        print("No ARP replay attacks detected.")
+
+#================================= ARP replay attack DETECTION =================================
 
 #================================= Rogue AP DETECTION =================================
 def Rogue_AP_Detection(packets):
@@ -106,18 +157,19 @@ def main():
     # print("==========================")
     # print("Deauth attack & password cracking detection - 1")
     # print("Rogue AP detection - 2")
-    # print("Database Enumeration - 3")
-    # print("Database FingerPrinting - 4")
-    # print("Vulnerability Scanning - 5")
+    # print("ARP Replay attack detection - 3")
+    # print("Rogue AP detection - 4")
 
     # Wait for user input and store it in a variable
     # selected_option = input("Input option here: ")
     packets = rdpcap("Packet_Files/wep-01-dec.cap")
-    selected_option = 1
+    selected_option = 3
     if(int(selected_option) == 1):
         deauth_password_crack_detect(packets)
     elif(int(selected_option) == 2):
         Rogue_AP_Detection(packets)
+    elif(int(selected_option) == 3):
+        ARP_Replay_Detection(packets)
 
 if __name__ == "__main__":
     main()
