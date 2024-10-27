@@ -225,6 +225,7 @@ def main():
 
     # Wait for user input and store it in a variable
     selected_option = input("Input option here: ")
+    print("\n")
 
     if(int(selected_option) == 1):
         deauth_password_crack_detect(packets)
