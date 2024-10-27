@@ -202,17 +202,30 @@ def deauth_password_crack_detect(packets):
 #================================= DEAUTHENTICATION ATTACK AND PASSWORD CRACKING DETECTION =================================
 
 def main():
-    # print("[Select an option:]")
-    # print("==========================")
-    # print("Deauth attack & password cracking detection - 1")
-    # print("Rogue AP detection - 2")
-    # print("ARP Replay attack detection - 3")
-    # print("BruteForce hidden ESSID detection - 4")
+    # Check if filename argument is provided
+    if len(sys.argv) < 2:
+        print("Usage: python WI-Guard.py <filename>")
+        return
+
+    # Get filename from command-line arguments
+    filename = sys.argv[1]
+
+    print("[Select an option:]")
+    print("==========================")
+    print("Deauth attack & password cracking detection - 1")
+    print("Rogue AP detection - 2")
+    print("ARP Replay attack detection - 3")
+    print("BruteForce hidden ESSID detection - 4")
+    
+    try:
+        packets = rdpcap(filename)
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        return
 
     # Wait for user input and store it in a variable
-    # selected_option = input("Input option here: ")
-    packets = rdpcap("Packet_Files/hidden_SSID.pcapng")
-    selected_option = 4
+    selected_option = input("Input option here: ")
+
     if(int(selected_option) == 1):
         deauth_password_crack_detect(packets)
     elif(int(selected_option) == 2):
