@@ -4,7 +4,53 @@ from collections import defaultdict
 #================================= BruteForce hidden ESSID DETECTION =================================
 
 def brute_hidden_ESSID_detect(packets):
-    print("In progress....")
+    # List to store probe packet tuples in the form of (timestamp, src_mac, ssid)
+    PROBE_Packets_List = []
+
+    # Extract the time of the first packet to use as a reference point
+    first_packet_time = float(packets[0].time) if packets else 0  # Avoids errors if packets list is empty
+
+    for pkt in packets:
+        if pkt.haslayer("Dot11"):
+            if pkt.type == 0 and pkt.subtype == 4:  # Management frame (type 0) and Probe Request (subtype 4)            
+                # Get source MAC address (the device sending the request)
+                src_mac = pkt.addr2
+
+                # Check for SSID in the Probe Request
+                # dot11elt.ID == 0 represents the SSID field
+                ssid = pkt["Dot11Elt"].info.decode('utf-8', errors='ignore') if pkt.haslayer("Dot11Elt") and pkt["Dot11Elt"].ID == 0 else "<Hidden SSID>"
+            
+                # Get packet timestamp as relative seconds from the first packet
+                timestamp = float(pkt.time) - first_packet_time
+
+                PROBE_Packets_List.append((timestamp, src_mac, ssid))
+
+
+    # Check for 50 or more packets within any 3-second window
+    threshold_count = 50
+    window_duration = 3.0  # seconds
+
+    # Iterate through each packet to check for the threshold condition
+    for i in range(len(PROBE_Packets_List)):
+        current_time = PROBE_Packets_List[i][0]
+    
+        # Initialize a counter for packets within the window and a set for SSIDs and MAC addresses
+        count_in_window = 0
+        ssids_in_window = set()  # To store unique SSIDs
+        macs_in_window = set()  # To store unique MAC addresses
+
+        # Count packets within the time window
+        for ts, mac, ssid in PROBE_Packets_List:
+            if current_time <= ts < current_time + window_duration:
+                count_in_window += 1
+                ssids_in_window.add(ssid)
+                macs_in_window.add(mac)
+
+        # Check if the number of packets exceeds the threshold
+        if count_in_window >= threshold_count:
+            print(f"Brute-force hidden ESSID attack detected from MAC Addresses:\n{macs_in_window}\nto SSIDs:\n{ssids_in_window}\nwith {count_in_window} packets in the time window of {current_time:.2f} to {current_time + window_duration:.2f} seconds.")
+            print("==============================================================================================")
+            print("==============================================================================================")
 
 #================================= BruteForce hidden ESSID DETECTION =================================
 #================================= ARP replay attack DETECTION =================================
