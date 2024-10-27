@@ -1,7 +1,12 @@
 from scapy.all import *
 from collections import defaultdict
 
+#================================= BruteForce hidden ESSID DETECTION =================================
 
+def brute_hidden_ESSID_detect(packets):
+    print("In progress....")
+
+#================================= BruteForce hidden ESSID DETECTION =================================
 #================================= ARP replay attack DETECTION =================================
 
 mac_timestamps = defaultdict(list)  # Dictionary to store timestamps for each source MAC address
@@ -50,7 +55,6 @@ def ARP_Replay_Detection(packets):
         print("No ARP replay attacks detected.")
 
 #================================= ARP replay attack DETECTION =================================
-
 #================================= Rogue AP DETECTION =================================
 def Rogue_AP_Detection(packets):
     # Dictionary to track SSID and BSSID associations
@@ -96,7 +100,6 @@ def Rogue_AP_Detection(packets):
                         break  # Stop the loop once a rogue AP is confirmed
     print("Analysis complete.")
 #================================= Rogue AP DETECTION =================================
-
 #================================= DEAUTHENTICATION ATTACK AND PASSWORD CRACKING DETECTION =================================
 def deauth_password_crack_detect(packets):
     # A counter for deauthentication packets
@@ -158,19 +161,21 @@ def main():
     # print("Deauth attack & password cracking detection - 1")
     # print("Rogue AP detection - 2")
     # print("ARP Replay attack detection - 3")
-    # print("Rogue AP detection - 4")
+    # print("BruteForce hidden ESSID detection - 4")
 
     # Wait for user input and store it in a variable
     # selected_option = input("Input option here: ")
-    packets = rdpcap("Packet_Files/wep-01-dec.cap")
-    selected_option = 3
+    packets = rdpcap("Packet_Files/hidden_SSID.pcapng")
+    selected_option = 4
     if(int(selected_option) == 1):
         deauth_password_crack_detect(packets)
     elif(int(selected_option) == 2):
         Rogue_AP_Detection(packets)
     elif(int(selected_option) == 3):
         ARP_Replay_Detection(packets)
-
+    elif(int(selected_option) == 4):
+        brute_hidden_ESSID_detect(packets)
+    
 if __name__ == "__main__":
     main()
 
