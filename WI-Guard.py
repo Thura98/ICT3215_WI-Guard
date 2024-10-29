@@ -187,7 +187,7 @@ def deauth_password_crack_detect(packets):
                             prev_deauth_count = cont_deauth_count
                         if cont_eapol_count == 4:
                             print("Possible password cracking attempt #" + str(password_crack_attempt) + " detected")
-                            print(str(prev_deauth_count) + " continuous deauth packets detected before client attempted to connect to the wireless point access point")
+                            print(str(prev_deauth_count) + " continuous deauth packets detected before client attempted to connect to the wireless access point")
                             print("================================================================================================================")
                             password_crack_attempt += 1
                     cont_deauth_count = 0
