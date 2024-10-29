@@ -94,7 +94,7 @@ def ARP_Replay_Detection(packets):
 
     # Output the detected spoofed MAC addresses
     if spoofed_macs:
-        print(f"Detected ARP replay attack! Spoofed source MAC addresses has {len(timestamps)} packets within {period} seconds")
+        print(f"Detected ARP replay attack! Spoofed source MAC addresses has 1000 packets within {period} seconds")
         for mac in spoofed_macs:
             print("Spoofed MAC:", mac)
     else:
